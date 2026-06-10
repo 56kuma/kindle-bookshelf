@@ -2,6 +2,7 @@ const state = {
   books: [],
   query: "",
   sort: "newest",
+  mangaOnly: false,
 };
 
 const elements = {
@@ -9,6 +10,7 @@ const elements = {
   template: document.querySelector("#book-card-template"),
   search: document.querySelector("#search-input"),
   sort: document.querySelector("#sort-select"),
+  mangaFilter: document.querySelector("#manga-filter"),
   csvInput: document.querySelector("#csv-input"),
   count: document.querySelector("#result-count"),
   source: document.querySelector("#source-label"),
@@ -21,7 +23,10 @@ const headerAliases = {
   cover_image: ["cover_image", "image_url", "cover", "表紙", "表紙画像"],
   title: ["title", "product_name", "タイトル", "商品名"],
   author: ["author", "creator", "作者", "著者"],
+  category: ["category", "type", "book_type", "種類", "種別", "カテゴリ"],
 };
+
+const mangaCategories = ["漫画", "マンガ", "コミック", "manga", "comic", "comics"];
 
 function parseCSV(text) {
   const rows = [];
@@ -84,6 +89,7 @@ function parseCSV(text) {
     cover_image: valueAt(values, indexes.cover_image),
     title: valueAt(values, indexes.title) || "タイトル不明",
     author: valueAt(values, indexes.author) || "作者不明",
+    category: valueAt(values, indexes.category) || "書籍",
   }));
 }
 
@@ -103,9 +109,11 @@ function getVisibleBooks() {
   const terms = normalize(state.query).split(" ").filter(Boolean);
   const filtered = state.books.filter((book) => {
     const searchable = normalize(
-      `${book.title} ${book.author} ${book.purchased_at}`,
+      `${book.title} ${book.author} ${book.purchased_at} ${book.category}`,
     );
-    return terms.every((term) => searchable.includes(term));
+    const matchesQuery = terms.every((term) => searchable.includes(term));
+    const matchesManga = !state.mangaOnly || isManga(book.category);
+    return matchesQuery && matchesManga;
   });
 
   return filtered.sort((left, right) => {
@@ -120,6 +128,11 @@ function getVisibleBooks() {
     }
     return dateValue(right.purchased_at) - dateValue(left.purchased_at);
   });
+}
+
+function isManga(category) {
+  const normalizedCategory = normalize(category);
+  return mangaCategories.some((value) => normalizedCategory.includes(value));
 }
 
 function dateValue(value) {
@@ -147,6 +160,7 @@ function render() {
     const card = elements.template.content.cloneNode(true);
     const cover = card.querySelector(".book-cover");
     const date = card.querySelector(".purchase-date");
+    const category = card.querySelector(".book-category");
 
     cover.src = book.cover_image || "";
     cover.alt = `${book.title}の表紙`;
@@ -156,6 +170,8 @@ function render() {
 
     date.dateTime = book.purchased_at;
     date.textContent = formatDate(book.purchased_at);
+    category.textContent = book.category;
+    category.classList.toggle("is-manga", isManga(book.category));
     card.querySelector(".book-title").textContent = book.title;
     card.querySelector(".book-author").textContent = book.author;
     fragment.append(card);
@@ -164,7 +180,7 @@ function render() {
   elements.list.replaceChildren(fragment);
   elements.list.hidden = books.length === 0;
   elements.empty.hidden = books.length !== 0;
-  elements.count.textContent = state.query
+  elements.count.textContent = state.query || state.mangaOnly
     ? `${state.books.length}冊中 ${books.length}冊`
     : `${books.length}冊`;
 }
@@ -193,9 +209,17 @@ elements.sort.addEventListener("change", (event) => {
   render();
 });
 
+elements.mangaFilter.addEventListener("click", () => {
+  state.mangaOnly = !state.mangaOnly;
+  elements.mangaFilter.setAttribute("aria-pressed", String(state.mangaOnly));
+  render();
+});
+
 elements.clearSearch.addEventListener("click", () => {
   state.query = "";
+  state.mangaOnly = false;
   elements.search.value = "";
+  elements.mangaFilter.setAttribute("aria-pressed", "false");
   elements.search.focus();
   render();
 });
@@ -209,7 +233,9 @@ elements.csvInput.addEventListener("change", async (event) => {
   try {
     state.books = parseCSV(await file.text());
     state.query = "";
+    state.mangaOnly = false;
     elements.search.value = "";
+    elements.mangaFilter.setAttribute("aria-pressed", "false");
     elements.source.textContent = file.name;
     render();
   } catch (error) {

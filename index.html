@@ -9,18 +9,21 @@
       content="Kindleで購入した本を、タイトルや作者からすばやく探せる個人用ブックシェルフ。"
     >
     <title>My Kindle Shelf</title>
+    <link rel="icon" href="data:,">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <header class="site-header">
       <div class="header-inner">
         <div class="brand-block">
-          <p class="eyebrow">PERSONAL LIBRARY</p>
-          <h1>My Kindle Shelf</h1>
+          <p class="eyebrow">THE GOLDEN LIBRARY</p>
+          <h1><span>My Kindle</span> Shelf</h1>
           <p class="intro">買った本を、すぐ見つける。</p>
         </div>
-        <div class="header-mark" aria-hidden="true">
-          <span>KS</span>
+        <div class="golden-figure" aria-hidden="true">
+          <div class="golden-large"></div>
+          <div class="golden-small"></div>
+          <span>1.618</span>
         </div>
       </div>
     </header>
@@ -40,6 +43,18 @@
               autocomplete="off"
             >
           </label>
+
+          <div class="filter-row" aria-label="本の種類で絞り込む">
+            <button
+              id="manga-filter"
+              class="filter-chip"
+              type="button"
+              aria-pressed="false"
+            >
+              <span class="filter-check" aria-hidden="true">✓</span>
+              マンガのみ
+            </button>
+          </div>
 
           <div class="controls">
             <label class="sort-control" for="sort-select">
@@ -77,8 +92,8 @@
         <div id="empty-state" class="empty-state" hidden>
           <span aria-hidden="true">0</span>
           <h3>本が見つかりませんでした</h3>
-          <p>検索する言葉を短くするか、別の作者名を試してください。</p>
-          <button id="clear-search" type="button">検索をクリア</button>
+          <p>検索する言葉を短くするか、絞り込みを解除してください。</p>
+          <button id="clear-search" type="button">検索と絞り込みをクリア</button>
         </div>
       </section>
     </main>
@@ -90,7 +105,10 @@
           <div class="cover-fallback" aria-hidden="true"></div>
         </div>
         <div class="book-info">
-          <time class="purchase-date"></time>
+          <div class="book-meta">
+            <time class="purchase-date"></time>
+            <span class="book-category"></span>
+          </div>
           <h3 class="book-title"></h3>
           <p class="book-author"></p>
         </div>
