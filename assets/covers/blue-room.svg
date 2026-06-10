@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#315d74"/>
+  <rect x="78" y="86" width="244" height="320" fill="#b8d0d4"/>
+  <rect x="108" y="116" width="184" height="260" fill="#235069"/>
+  <circle cx="230" cy="210" r="76" fill="#e87443"/>
+  <text x="60" y="480" fill="#fffaf0" font-family="serif" font-size="43">青い部屋の記憶</text>
+  <text x="60" y="534" fill="#dce7e6" font-family="sans-serif" font-size="20">小川 文</text>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#17223b"/>
+  <circle cx="290" cy="140" r="68" fill="#efe6c8"/>
+  <path d="M0 430 400 250v350H0Z" fill="#b94730"/>
+  <path d="m35 500 330-146" stroke="#f6d69c" stroke-width="8" stroke-dasharray="22 16"/>
+  <text x="42" y="88" fill="#fff8e8" font-family="serif" font-size="34">夜行列車で読む</text>
+  <text x="42" y="132" fill="#fff8e8" font-family="serif" font-size="34">短編集</text>
+  <text x="42" y="555" fill="#fff8e8" font-family="sans-serif" font-size="20">秋山 澪</text>
+</svg>

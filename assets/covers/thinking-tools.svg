@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#eee8d9"/>
+  <rect x="42" y="45" width="316" height="510" fill="none" stroke="#1e2a25" stroke-width="3"/>
+  <circle cx="200" cy="210" r="94" fill="#e65f2e"/>
+  <path d="M130 210h140M200 140v140" stroke="#f8f2e6" stroke-width="5"/>
+  <text x="68" y="370" fill="#1e2a25" font-family="serif" font-size="36">考えるための</text>
+  <text x="68" y="418" fill="#1e2a25" font-family="serif" font-size="36">小さな道具</text>
+  <text x="68" y="510" fill="#52615a" font-family="sans-serif" font-size="20">南雲 圭</text>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#f2eee2"/>
+  <path d="M0 480 70 330l65 58 74-210 54 137 72-85 65 250Z" fill="#263f35"/>
+  <path d="M0 480h400" stroke="#e56232" stroke-width="18"/>
+  <text x="42" y="90" fill="#20372e" font-family="serif" font-size="42">街角観察</text>
+  <text x="42" y="140" fill="#20372e" font-family="serif" font-size="42">ノート</text>
+  <text x="42" y="548" fill="#5a6962" font-family="sans-serif" font-size="20">森川 凛</text>
+</svg>

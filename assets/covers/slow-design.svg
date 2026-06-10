@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#f0c85d"/>
+  <path d="M0 150h400v300H0Z" fill="#f3eee1"/>
+  <path d="m65 375 92-150 82 92 96-130" fill="none" stroke="#243b30" stroke-width="18"/>
+  <text x="45" y="84" fill="#1b3027" font-family="serif" font-size="36">ゆっくりつくる</text>
+  <text x="45" y="128" fill="#1b3027" font-family="serif" font-size="36">デザイン</text>
+  <text x="45" y="525" fill="#1b3027" font-family="sans-serif" font-size="20">佐伯 灯</text>
+</svg>

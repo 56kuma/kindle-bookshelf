@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#18221d">
+    <meta
+      name="description"
+      content="Kindleで購入した本を、タイトルや作者からすばやく探せる個人用ブックシェルフ。"
+    >
+    <title>My Kindle Shelf</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <div class="brand-block">
+          <p class="eyebrow">PERSONAL LIBRARY</p>
+          <h1>My Kindle Shelf</h1>
+          <p class="intro">買った本を、すぐ見つける。</p>
+        </div>
+        <div class="header-mark" aria-hidden="true">
+          <span>KS</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="search-section" aria-labelledby="search-heading">
+        <div class="search-panel">
+          <h2 id="search-heading" class="visually-hidden">本を検索する</h2>
+          <label class="search-box" for="search-input">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m21 21-4.35-4.35m2.35-5.4A7.75 7.75 0 1 1 3.5 11.25a7.75 7.75 0 0 1 15.5 0Z"/>
+            </svg>
+            <input
+              id="search-input"
+              type="search"
+              placeholder="タイトル・作者・購入日で検索"
+              autocomplete="off"
+            >
+          </label>
+
+          <div class="controls">
+            <label class="sort-control" for="sort-select">
+              <span>並び順</span>
+              <select id="sort-select">
+                <option value="newest">購入日が新しい順</option>
+                <option value="oldest">購入日が古い順</option>
+                <option value="title">タイトル順</option>
+                <option value="author">作者順</option>
+              </select>
+            </label>
+
+            <label class="file-button" for="csv-input">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/>
+              </svg>
+              CSVを読み込む
+            </label>
+            <input id="csv-input" class="visually-hidden" type="file" accept=".csv,text/csv">
+          </div>
+        </div>
+      </section>
+
+      <section class="shelf-section" aria-labelledby="shelf-heading">
+        <div class="shelf-heading-row">
+          <div>
+            <p id="source-label" class="source-label">サンプルデータ</p>
+            <h2 id="shelf-heading">購入した本</h2>
+          </div>
+          <p id="result-count" class="result-count" aria-live="polite">読み込み中...</p>
+        </div>
+
+        <div id="book-list" class="book-list" aria-live="polite"></div>
+
+        <div id="empty-state" class="empty-state" hidden>
+          <span aria-hidden="true">0</span>
+          <h3>本が見つかりませんでした</h3>
+          <p>検索する言葉を短くするか、別の作者名を試してください。</p>
+          <button id="clear-search" type="button">検索をクリア</button>
+        </div>
+      </section>
+    </main>
+
+    <template id="book-card-template">
+      <article class="book-card">
+        <div class="cover-wrap">
+          <img class="book-cover" alt="" loading="lazy">
+          <div class="cover-fallback" aria-hidden="true"></div>
+        </div>
+        <div class="book-info">
+          <time class="purchase-date"></time>
+          <h3 class="book-title"></h3>
+          <p class="book-author"></p>
+        </div>
+      </article>
+    </template>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>

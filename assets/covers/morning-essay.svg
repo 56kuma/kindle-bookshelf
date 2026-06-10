@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <rect width="400" height="600" fill="#f2d7c4"/>
+  <circle cx="200" cy="235" r="132" fill="#ed6a37"/>
+  <path d="M65 235h270M200 100v270" stroke="#f8ecdf" stroke-width="3"/>
+  <rect y="420" width="400" height="180" fill="#263d34"/>
+  <text x="45" y="70" fill="#263d34" font-family="serif" font-size="34">朝の余白に読む</text>
+  <text x="45" y="112" fill="#263d34" font-family="serif" font-size="34">エッセイ</text>
+  <text x="45" y="520" fill="#f7eee4" font-family="sans-serif" font-size="20">吉野 奏</text>
+</svg>
