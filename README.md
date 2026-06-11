@@ -1,38 +1,52 @@
 # kindle-bookshelf
 
-手動で取得・整形したKindle購入リストCSVを、検索しやすい本棚として表示する静的ウェブページです。
+購入済みKindle本を検索・閲覧する、モバイル対応の静的ウェブページです。
 
-## 起動方法
+## 主な機能
 
-ローカルHTTPサーバーを起動してブラウザから開きます。
+- タイトル、著者、ASIN、購入日の部分一致検索
+- 漫画のみの絞り込み
+- 購入日、タイトル、著者による並び替え
+- Amazonの表紙画像と商品ページへのリンク
+- 6,000冊以上でも軽く動く段階描画
+- 手元のCSVを選択して一時的に表示
+
+## データを同期する
+
+`kindle-purchase-index` で生成したCSVを本棚へコピーします。
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-kindle-csv.ps1
+```
+
+同期先は `data/kindle-web-library.csv` です。このファイルには個人の購入履歴が含まれるため、Gitの管理対象から除外しています。
+
+## ローカルで起動する
 
 ```powershell
 python -m http.server 8000
 ```
 
-<http://localhost:8000> を開いてください。
+ブラウザーで <http://localhost:8000> を開きます。
 
 ## CSV形式
 
-`data/books.csv` を次の形式で差し替えると、起動時にその内容が表示されます。
-
 ```csv
-purchased_at,cover_image,title,author,category
-2026-05-24,assets/covers/sample.svg,本のタイトル,作者名,漫画
+purchased_at,title,author,asin,cover_url,is_manga
+2026-06-06,本のタイトル,著者名,B012345678,https://example.com/cover.jpg,true
 ```
 
-- `purchased_at`: 購入日。`YYYY-MM-DD` を推奨
-- `cover_image`: 表紙画像のURL、またはHTMLから見たローカル画像パス
-- `title`: タイトル
-- `author`: 作者
-- `category`: 本の種類。「マンガのみ」絞り込みでは `漫画`、`マンガ`、`コミック`、`manga`、`comic` をマンガとして扱う
+## Cloudflare Pages
 
-画面の「CSVを読み込む」からファイルを選び、一時的に内容を確認することもできます。選択したCSVや検索内容が外部へ送信されることはありません。
+画面はCloudflare Pages、購入履歴CSVは非公開R2バケットへ分離します。通常のデータ更新ではPagesを再デプロイせず、CSVだけをR2へ上書きします。
 
-## 主な機能
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-pages.ps1
+npx wrangler pages deploy .\dist
 
-- タイトル、作者、購入日の部分一致検索
-- マンガのみのワンタップ絞り込み
-- 購入日、タイトル、作者による並び替え
-- CSVファイルのブラウザ内プレビュー
-- スマートフォンを優先したレスポンシブ表示
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\upload-cloudflare-data.ps1
+```
+
+Pages Functionsの `/api/books` がR2からCSVを読み込みます。Cloudflare側でR2バインディング `BOOKS_BUCKET` を設定し、購入履歴を外部公開しない場合はCloudflare AccessでPagesのホスト名全体を認証必須にしてください。
+
+詳しい構成と日次更新手順は [docs/cloudflare-pages.md](docs/cloudflare-pages.md) を参照してください。

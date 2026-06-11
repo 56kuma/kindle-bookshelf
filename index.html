@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#18221d">
     <meta
       name="description"
-      content="Kindleで購入した本を、タイトルや作者からすばやく探せる個人用ブックシェルフ。"
+      content="購入済みKindle本を、タイトル・著者・ASIN・購入日から検索できる個人用本棚。"
     >
     <title>My Kindle Shelf</title>
     <link rel="icon" href="data:,">
@@ -39,7 +39,7 @@
             <input
               id="search-input"
               type="search"
-              placeholder="タイトル・作者・購入日で検索"
+              placeholder="タイトル・著者・ASIN・購入日で検索"
               autocomplete="off"
             >
           </label>
@@ -52,7 +52,7 @@
               aria-pressed="false"
             >
               <span class="filter-check" aria-hidden="true">✓</span>
-              マンガのみ
+              漫画のみ
             </button>
           </div>
 
@@ -63,7 +63,7 @@
                 <option value="newest">購入日が新しい順</option>
                 <option value="oldest">購入日が古い順</option>
                 <option value="title">タイトル順</option>
-                <option value="author">作者順</option>
+                <option value="author">著者順</option>
               </select>
             </label>
 
@@ -81,13 +81,15 @@
       <section class="shelf-section" aria-labelledby="shelf-heading">
         <div class="shelf-heading-row">
           <div>
-            <p id="source-label" class="source-label">サンプルデータ</p>
+            <p id="source-label" class="source-label">データを読み込み中</p>
             <h2 id="shelf-heading">購入した本</h2>
+            <p id="library-summary" class="library-summary"></p>
           </div>
           <p id="result-count" class="result-count" aria-live="polite">読み込み中...</p>
         </div>
 
         <div id="book-list" class="book-list" aria-live="polite"></div>
+        <p id="load-sentinel" class="load-sentinel" aria-live="polite">読み込み中...</p>
 
         <div id="empty-state" class="empty-state" hidden>
           <span aria-hidden="true">0</span>
@@ -101,7 +103,7 @@
     <template id="book-card-template">
       <article class="book-card">
         <div class="cover-wrap">
-          <img class="book-cover" alt="" loading="lazy">
+          <img class="book-cover" alt="" loading="lazy" referrerpolicy="no-referrer">
           <div class="cover-fallback" aria-hidden="true"></div>
         </div>
         <div class="book-info">
@@ -111,6 +113,7 @@
           </div>
           <h3 class="book-title"></h3>
           <p class="book-author"></p>
+          <a class="book-asin" target="_blank" rel="noopener noreferrer"></a>
         </div>
       </article>
     </template>
