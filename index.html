@@ -54,6 +54,15 @@
               <span class="filter-check" aria-hidden="true">✓</span>
               漫画のみ
             </button>
+            <button
+              id="comment-filter"
+              class="filter-chip"
+              type="button"
+              aria-pressed="false"
+            >
+              <span class="filter-check" aria-hidden="true">✓</span>
+              コメントあり
+            </button>
           </div>
 
           <div class="controls">
@@ -62,8 +71,9 @@
               <select id="sort-select">
                 <option value="newest">購入日が新しい順</option>
                 <option value="oldest">購入日が古い順</option>
-                <option value="title">タイトル順</option>
-                <option value="author">著者順</option>
+                <option value="title">タイトル あいうえお順</option>
+                <option value="author">著者 あいうえお順</option>
+                <option value="genre">ジャンル順（漫画・書籍）</option>
               </select>
             </label>
 
@@ -82,7 +92,7 @@
         <div class="shelf-heading-row">
           <div>
             <p id="source-label" class="source-label">データを読み込み中</p>
-            <h2 id="shelf-heading">購入した本</h2>
+            <h2 id="shelf-heading">わたしの本棚</h2>
             <p id="library-summary" class="library-summary"></p>
           </div>
           <p id="result-count" class="result-count" aria-live="polite">読み込み中...</p>
@@ -102,21 +112,98 @@
 
     <template id="book-card-template">
       <article class="book-card">
-        <div class="cover-wrap">
-          <img class="book-cover" alt="" loading="lazy" referrerpolicy="no-referrer">
-          <div class="cover-fallback" aria-hidden="true"></div>
-        </div>
+        <a class="cover-link" target="_blank" rel="noopener noreferrer">
+          <div class="cover-wrap">
+            <img class="book-cover" alt="" loading="lazy" referrerpolicy="no-referrer">
+            <div class="cover-fallback" aria-hidden="true"></div>
+          </div>
+        </a>
         <div class="book-info">
           <div class="book-meta">
             <time class="purchase-date"></time>
             <span class="book-category"></span>
+            <button class="comment-button" type="button" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 4.75h14a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-7.25L7 20v-3.75H5a1.5 1.5 0 0 1-1.5-1.5v-8.5A1.5 1.5 0 0 1 5 4.75Z"/>
+                <path d="m9 13.5.4-2.1 4.9-4.9 1.7 1.7-4.9 4.9-2.1.4Z"/>
+              </svg>
+              <span class="comment-status-dot" aria-hidden="true"></span>
+            </button>
           </div>
           <h3 class="book-title"></h3>
+          <p class="series-progress" hidden></p>
           <p class="book-author"></p>
           <a class="book-asin" target="_blank" rel="noopener noreferrer"></a>
         </div>
       </article>
     </template>
+
+    <dialog id="comment-view-dialog" class="comment-view-dialog">
+      <article class="comment-view-content">
+        <div class="comment-dialog-header">
+          <div>
+            <p class="comment-eyebrow">MY COMMENT</p>
+            <h2 id="comment-view-title"></h2>
+          </div>
+          <button
+            id="comment-view-close"
+            class="comment-close"
+            type="button"
+            aria-label="閉じる"
+          >×</button>
+        </div>
+
+        <div id="comment-view-list" class="comment-thread"></div>
+
+        <div class="comment-view-actions">
+          <button id="comment-view-add" class="comment-save" type="button">
+            コメントを追加
+          </button>
+          <button id="comment-view-cancel" class="comment-cancel" type="button">
+            閉じる
+          </button>
+        </div>
+      </article>
+    </dialog>
+
+    <dialog id="comment-dialog" class="comment-dialog">
+      <form id="comment-form" class="comment-form">
+        <div class="comment-dialog-header">
+          <div>
+            <p class="comment-eyebrow">MY COMMENT</p>
+            <h2 id="comment-book-title"></h2>
+          </div>
+          <button
+            id="comment-close"
+            class="comment-close"
+            type="button"
+            aria-label="閉じる"
+          >×</button>
+        </div>
+
+        <label class="comment-label" for="comment-text">
+          <span id="comment-mode-label">新しいコメント</span>
+          <textarea
+            id="comment-text"
+            rows="7"
+            maxlength="1000"
+            placeholder="感想、好きな場面、次に読みたい巻など"
+          ></textarea>
+        </label>
+
+        <div class="comment-dialog-meta">
+          <span>このブラウザに保存されます</span>
+          <span id="comment-count">0 / 1000</span>
+        </div>
+
+        <div class="comment-dialog-actions">
+          <button id="comment-cancel" class="comment-cancel" type="button">
+            キャンセル
+          </button>
+          <button id="comment-submit" class="comment-save" type="submit">追加</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="app.js" defer></script>
   </body>
