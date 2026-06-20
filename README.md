@@ -1,6 +1,7 @@
 # kindle-bookshelf
 
-`kindle-purchase-index`のCSVを検索・閲覧する、モバイル対応の個人用本棚です。
+* `kindle-purchase-index`のCSVを検索・閲覧する、モバイル対応の個人用本棚です。
+* まずは家庭内用で作成
 
 ## 機能
 
