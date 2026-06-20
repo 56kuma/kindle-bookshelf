@@ -1,0 +1,9 @@
+name = "kindle-bookshelf"
+compatibility_date = "2026-06-14"
+pages_build_output_dir = "dist"
+
+# /api/books が R2 から CSV を読むためのバインド。
+# Dashboard の手動バインドに頼らず、デプロイ時にここから確実に付与する。
+[[r2_buckets]]
+binding = "BOOKS_BUCKET"
+bucket_name = "kindle-bookshelf-data"

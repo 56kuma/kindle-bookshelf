@@ -31,6 +31,11 @@ New-Item -ItemType Directory -Force -Path (Join-Path $outputFullPath "data") | O
     Copy-Item -LiteralPath (Join-Path $repositoryRoot $_) -Destination $outputFullPath
 }
 
+# NOTE: Do not copy Pages Functions (/api/*) into dist.
+# Because wrangler.toml sets pages_build_output_dir, the Functions source is the
+# repo-root functions\ directory and is compiled automatically at deploy time.
+# Placing functions\ inside dist makes them static assets and breaks routing.
+
 if ($IncludeCsv) {
     & (Join-Path $scriptDirectory "sync-kindle-csv.ps1")
     Copy-Item `

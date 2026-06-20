@@ -34,10 +34,16 @@ if ($missingColumns.Count -gt 0) {
 $npx = Get-Command "npx.cmd" -ErrorAction Stop
 $objectPath = "$BucketName/$ObjectKey"
 
-& $npx.Source wrangler r2 object put $objectPath `
-    --file=$sourceFullPath `
-    --content-type="text/csv; charset=utf-8" `
-    --cache-control="private, no-cache"
+# --remote is REQUIRED. Without it, Wrangler writes to the local (.wrangler/state)
+# R2 simulator and the object never reaches the real Cloudflare R2 bucket.
+$wranglerArgs = @(
+    "wrangler", "r2", "object", "put", $objectPath,
+    "--remote",
+    "--file=$sourceFullPath",
+    "--content-type=text/csv; charset=utf-8",
+    "--cache-control=private, no-cache"
+)
+& $npx.Source @wranglerArgs
 
 if ($LASTEXITCODE -ne 0) {
     throw "Cloudflare R2 upload failed with exit code $LASTEXITCODE"
