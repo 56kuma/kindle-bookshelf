@@ -13,4 +13,4 @@ bucket_name = "kindle-bookshelf-data"
 [[d1_databases]]
 binding = "COMMENTS_DB"
 database_name = "kindle-comments"
-database_id = "placeholder-run-wrangler-d1-create"
+database_id = "9f812149-5f06-463f-b492-71ec2df44fa1"
