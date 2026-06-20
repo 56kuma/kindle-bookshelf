@@ -7,3 +7,10 @@ pages_build_output_dir = "dist"
 [[r2_buckets]]
 binding = "BOOKS_BUCKET"
 bucket_name = "kindle-bookshelf-data"
+
+# /api/comments がコメントを読み書きする D1 バインド。
+# database_id は `npx wrangler d1 create kindle-comments` で発行した値を設定する。
+[[d1_databases]]
+binding = "COMMENTS_DB"
+database_name = "kindle-comments"
+database_id = "placeholder-run-wrangler-d1-create"

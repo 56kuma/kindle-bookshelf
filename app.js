@@ -7,6 +7,8 @@ const japaneseCollator = new Intl.Collator("ja", {
   ignorePunctuation: true,
 });
 
+let useApi = false;
+
 const state = {
   rawBooks: [],
   books: [],
@@ -52,6 +54,7 @@ const elements = {
   commentSubmit: document.querySelector("#comment-submit"),
   commentClose: document.querySelector("#comment-close"),
   commentCancel: document.querySelector("#comment-cancel"),
+  commentStorageLabel: document.querySelector("#comment-storage-label"),
 };
 
 const headerAliases = {
@@ -497,13 +500,31 @@ function createBookCard(book, index) {
   return card;
 }
 
-function loadComments() {
+async function loadComments() {
+  try {
+    const response = await fetch("/api/comments", { cache: "no-cache" });
+    if (response.ok) {
+      const data = await response.json();
+      useApi = true;
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        return {};
+      }
+      return Object.fromEntries(
+        Object.entries(data)
+          .map(([key, value]) => [key, normalizeCommentEntries(value)])
+          .filter(([, entries]) => entries.length > 0),
+      );
+    }
+  } catch {
+    // fall through to localStorage
+  }
+
+  useApi = false;
   try {
     const stored = JSON.parse(localStorage.getItem(COMMENT_STORAGE_KEY) || "{}");
     if (!stored || typeof stored !== "object" || Array.isArray(stored)) {
       return {};
     }
-
     return Object.fromEntries(
       Object.entries(stored)
         .map(([key, value]) => [key, normalizeCommentEntries(value)])
@@ -683,7 +704,7 @@ function closeCommentDialog() {
   elements.commentDialog.close();
 }
 
-function saveActiveComment() {
+async function saveActiveComment() {
   const key = state.activeCommentKey;
   const book = state.activeCommentBook;
   const commentId = state.activeCommentId;
@@ -692,26 +713,55 @@ function saveActiveComment() {
     return;
   }
 
-  const now = new Date().toISOString();
-  if (commentId) {
-    state.comments[key] = getComments(key).map((comment) => (
-      comment.id === commentId
-        ? { ...comment, text, updated_at: now }
-        : comment
-    ));
+  if (useApi) {
+    try {
+      if (commentId) {
+        const res = await fetch("/api/comments", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ key, id: commentId, text }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const entry = await res.json();
+        state.comments[key] = getComments(key).map((c) =>
+          c.id === commentId ? entry : c,
+        );
+      } else {
+        const res = await fetch("/api/comments", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ key, text }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const entry = await res.json();
+        state.comments[key] = [...getComments(key), entry];
+      }
+    } catch (error) {
+      window.alert(`コメントの保存に失敗しました: ${error.message}`);
+      return;
+    }
   } else {
-    state.comments[key] = [
-      ...getComments(key),
-      {
-        id: globalThis.crypto?.randomUUID?.() || `comment-${Date.now()}`,
-        text,
-        created_at: now,
-        updated_at: "",
-      },
-    ];
+    const now = new Date().toISOString();
+    if (commentId) {
+      state.comments[key] = getComments(key).map((comment) => (
+        comment.id === commentId
+          ? { ...comment, text, updated_at: now }
+          : comment
+      ));
+    } else {
+      state.comments[key] = [
+        ...getComments(key),
+        {
+          id: globalThis.crypto?.randomUUID?.() || `comment-${Date.now()}`,
+          text,
+          created_at: now,
+          updated_at: "",
+        },
+      ];
+    }
+    persistComments();
   }
 
-  persistComments();
   refreshCommentCards(key);
   elements.commentDialog.close();
   state.activeCommentKey = "";
@@ -724,10 +774,24 @@ function editCommentEntry(book, commentId) {
   openCommentDialog(book, commentId);
 }
 
-function deleteCommentEntry(book, commentId) {
+async function deleteCommentEntry(book, commentId) {
   const key = book.comment_key;
   if (!window.confirm("このコメントを削除しますか？")) {
     return;
+  }
+
+  if (useApi) {
+    try {
+      const res = await fetch("/api/comments", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ key, id: commentId }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (error) {
+      window.alert(`コメントの削除に失敗しました: ${error.message}`);
+      return;
+    }
   }
 
   const remaining = getComments(key).filter((comment) => comment.id !== commentId);
@@ -736,7 +800,7 @@ function deleteCommentEntry(book, commentId) {
   } else {
     delete state.comments[key];
   }
-  persistComments();
+  if (!useApi) persistComments();
   refreshCommentCards(key);
   if (remaining.length > 0) {
     renderCommentThread(book);
@@ -950,7 +1014,16 @@ const loadObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: "600px 0px" });
 
 loadObserver.observe(elements.loadSentinel);
-state.comments = loadComments();
+
+loadComments().then((comments) => {
+  state.comments = comments;
+  if (elements.commentStorageLabel) {
+    elements.commentStorageLabel.textContent = useApi
+      ? "サーバーに保存されます（誰でも閲覧できます）"
+      : "このブラウザに保存されます";
+  }
+  if (state.books.length > 0) render();
+});
 
 let resizeTimer;
 window.addEventListener("resize", () => {

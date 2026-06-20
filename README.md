@@ -8,7 +8,7 @@
 - タイトル・著者・ASIN・購入日・ジャンルでの全文検索
 - 漫画のみ・コメントあり絞り込み、購入日（新/旧）・タイトル・著者・ジャンル順ソート
 - 全冊数・漫画作品数・書籍数のライブラリサマリー
-- 漫画ごとのコメントをブラウザへ保存（複数追加・編集・削除・スレッド表示）
+- 漫画ごとのコメントを Cloudflare D1 DB へ保存（誰でもWebから投稿・編集・削除・スレッド表示）
 - ブラウザから直接CSVを読み込む機能
 
 ## ローカル起動
@@ -23,7 +23,10 @@ python -m http.server 8000
 
 <http://localhost:8000> を開きます。
 
-漫画カードの吹き出しアイコンからコメントを追加・編集できます。投稿・更新時刻付きの履歴をスレッド表示し、同じブラウザの `localStorage` へ保存します。
+漫画カードの吹き出しアイコンからコメントを追加・編集できます。投稿・更新時刻付きの履歴をスレッド表示します。
+
+- **本番（Cloudflare Pages）**: `/api/comments` 経由で Cloudflare D1 へ保存。誰でもブラウザから投稿できます。
+- **ローカル（localhost）**: D1 API に接続できないため `localStorage` へフォールバックします。
 
 ## CSV
 
@@ -85,7 +88,28 @@ npx wrangler r2 bucket create kindle-bookshelf-data
 
 R2 の公開アクセスは有効にしません。
 
-**3. Pages プロジェクトを作成**
+**4. D1 データベースを作成**
+
+```cmd
+npx wrangler d1 create kindle-comments
+```
+
+出力された `database_id` を `wrangler.toml` の `[[d1_databases]]` セクションに貼り付けます。
+
+```toml
+[[d1_databases]]
+binding = "COMMENTS_DB"
+database_name = "kindle-comments"
+database_id = "ここに貼り付ける"
+```
+
+マイグレーションを本番 D1 に適用します。
+
+```cmd
+npx wrangler d1 execute kindle-comments --remote --file=migrations/0001_comments.sql
+```
+
+**5. Pages プロジェクトを作成**
 
 ```cmd
 npx wrangler pages project create kindle-bookshelf
@@ -93,7 +117,7 @@ npx wrangler pages project create kindle-bookshelf
 
 プロジェクト名の例は `kindle-bookshelf`、本番ブランチは `main` です。
 
-**4. 画面を初回デプロイ**
+**6. 画面を初回デプロイ**
 
 ```cmd
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-pages.ps1
@@ -109,7 +133,7 @@ npx wrangler pages deploy --project-name kindle-bookshelf
 > `npx wrangler pages deploy` は位置引数なしで実行してください（`pages_build_output_dir` が
 > 出力ディレクトリ `dist` を解決します）。
 
-**5. CSV を初回アップロード**
+**7. CSV を初回アップロード**
 
 ```cmd
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\upload-cloudflare-data.ps1
@@ -119,6 +143,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\upload-cloudflare-
 > `wrangler r2 object put` に `--remote` を付けています。これが無いと Wrangler は
 > ローカルの R2 シミュレータ（`.wrangler\state`）に書き込み、本番には反映されず
 > `/api/books` が「CSV was not found」（HTTP 404）を返します。
+
+### CI/CD（main ブランチ → 本番自動デプロイ）
+
+`.github/workflows/deploy.yml` により、`main` ブランチへ push すると GitHub Actions が自動で Cloudflare Pages にデプロイします。
+
+事前に GitHub リポジトリの **Settings → Secrets and variables → Actions** へ以下を登録してください。
+
+| シークレット名 | 値の取得方法 |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare Dashboard → My Profile → API Tokens → Create Token（Pages デプロイ権限） |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Dashboard → 右側サイドバーの Account ID |
 
 ### 随時更新
 
