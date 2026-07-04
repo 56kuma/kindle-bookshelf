@@ -149,16 +149,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\upload-cloudflare-
 > ローカルの R2 シミュレータ（`.wrangler\state`）に書き込み、本番には反映されず
 > `/api/books` が「CSV was not found」（HTTP 404）を返します。
 
-### CI/CD（main ブランチ → 本番自動デプロイ）
+### CI/CD
 
-`.github/workflows/deploy.yml` により、`main` ブランチへ push すると GitHub Actions が自動で Cloudflare Pages にデプロイします。
+**未設定です。** push しても自動デプロイはされません。画面の反映は下記「随時更新」のとおり `wrangler pages deploy` を手動実行してください。
 
-事前に GitHub リポジトリの **Settings → Secrets and variables → Actions** へ以下を登録してください。
-
-| シークレット名 | 値の取得方法 |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare Dashboard → My Profile → API Tokens → Create Token（Pages デプロイ権限） |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Dashboard → 右側サイドバーの Account ID |
+GitHub Actions で自動化する場合は `.github/workflows/deploy.yml` を作成し、リポジトリの **Settings → Secrets and variables → Actions** へ `CLOUDFLARE_API_TOKEN`（Pages デプロイ権限）と `CLOUDFLARE_ACCOUNT_ID` を登録する必要があります。
 
 ### 自動同期
 
