@@ -883,7 +883,8 @@ function updateSummary() {
 }
 
 function renderRecentUpdates() {
-  const recent = [...state.rawBooks]
+  // シリーズ集約後のデータを使い、同じ漫画は1エントリ（最新巻の購入日）にまとめる
+  const recent = [...state.books]
     .sort(
       (left, right) => dateValue(right.purchased_at) - dateValue(left.purchased_at),
     )
@@ -894,7 +895,7 @@ function renderRecentUpdates() {
     return;
   }
 
-  elements.recentLatest.textContent = `直近${recent.length}冊 · ${formatDate(recent[0].purchased_at)}`;
+  elements.recentLatest.textContent = `直近${recent.length}件 · ${formatDate(recent[0].purchased_at)}`;
   elements.recentList.replaceChildren(
     ...recent.map((book) => {
       const item = document.createElement("li");
@@ -924,7 +925,9 @@ function renderRecentUpdates() {
       title.className = "recent-book-title";
       title.textContent = book.title;
       meta.className = "recent-book-meta";
-      meta.textContent = `${book.author} · ${book.category}`;
+      meta.textContent = book.is_series
+        ? `${book.author} · ${book.max_volume}巻まで · ${book.owned_volume_count}冊所持`
+        : `${book.author} · ${book.category}`;
       date.className = "recent-date";
       date.dateTime = book.purchased_at;
       date.textContent = formatDate(book.purchased_at);
