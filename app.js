@@ -1,4 +1,5 @@
 const SHELVES_PER_PAGE = 8;
+const RECENT_UPDATES_COUNT = 5;
 const COMMENT_STORAGE_KEY = "kindle-bookshelf-comments-v1";
 const japaneseCollator = new Intl.Collator("ja", {
   usage: "sort",
@@ -39,6 +40,9 @@ const elements = {
   empty: document.querySelector("#empty-state"),
   clearSearch: document.querySelector("#clear-search"),
   loadSentinel: document.querySelector("#load-sentinel"),
+  recentUpdates: document.querySelector("#recent-updates"),
+  recentList: document.querySelector("#recent-list"),
+  recentLatest: document.querySelector("#recent-latest"),
   commentViewDialog: document.querySelector("#comment-view-dialog"),
   commentViewTitle: document.querySelector("#comment-view-title"),
   commentViewList: document.querySelector("#comment-view-list"),
@@ -878,6 +882,61 @@ function updateSummary() {
     `全${state.rawBooks.length.toLocaleString("ja-JP")}冊 · 漫画${manga.toLocaleString("ja-JP")}冊を${mangaWorks.toLocaleString("ja-JP")}作品に整理 · 書籍${books.toLocaleString("ja-JP")}冊`;
 }
 
+function renderRecentUpdates() {
+  const recent = [...state.rawBooks]
+    .sort(
+      (left, right) => dateValue(right.purchased_at) - dateValue(left.purchased_at),
+    )
+    .slice(0, RECENT_UPDATES_COUNT);
+
+  elements.recentUpdates.hidden = recent.length === 0;
+  if (recent.length === 0) {
+    return;
+  }
+
+  elements.recentLatest.textContent = `直近${recent.length}冊 · ${formatDate(recent[0].purchased_at)}`;
+  elements.recentList.replaceChildren(
+    ...recent.map((book) => {
+      const item = document.createElement("li");
+      const link = document.createElement(book.asin ? "a" : "div");
+      const cover = document.createElement("img");
+      const info = document.createElement("div");
+      const title = document.createElement("p");
+      const meta = document.createElement("p");
+      const date = document.createElement("time");
+
+      item.className = "recent-item";
+      link.className = "recent-link";
+      if (book.asin) {
+        link.href = `https://www.amazon.co.jp/dp/${encodeURIComponent(book.asin)}`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+      }
+      cover.className = "recent-cover";
+      cover.src = book.cover_image;
+      cover.alt = "";
+      cover.loading = "lazy";
+      cover.referrerPolicy = "no-referrer";
+      cover.addEventListener("error", () => cover.classList.add("is-missing"), {
+        once: true,
+      });
+      info.className = "recent-info";
+      title.className = "recent-book-title";
+      title.textContent = book.title;
+      meta.className = "recent-book-meta";
+      meta.textContent = `${book.author} · ${book.category}`;
+      date.className = "recent-date";
+      date.dateTime = book.purchased_at;
+      date.textContent = formatDate(book.purchased_at);
+
+      info.append(title, meta);
+      link.append(cover, info, date);
+      item.append(link);
+      return item;
+    }),
+  );
+}
+
 function render() {
   state.shelfCapacity = getShelfCapacity();
   state.visibleBooks = getVisibleBooks();
@@ -904,6 +963,7 @@ async function loadCSV(text, sourceLabel) {
   resetFilters();
   elements.source.textContent = sourceLabel;
   updateSummary();
+  renderRecentUpdates();
   render();
 }
 

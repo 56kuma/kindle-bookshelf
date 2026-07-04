@@ -160,6 +160,27 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\upload-cloudflare-
 | `CLOUDFLARE_API_TOKEN` | Cloudflare Dashboard → My Profile → API Tokens → Create Token（Pages デプロイ権限） |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare Dashboard → 右側サイドバーの Account ID |
 
+### 自動同期
+
+`scripts\sync-all.ps1` がエクスポート → 検証 → R2アップロード → ローカルコピーを一括実行します。
+
+```cmd
+cd /d D:\kindle\kindle-bookshelf
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-all.ps1
+```
+
+- Amazonセッション切れは終了コード2で中断しトースト通知。`kindle-purchase-index` で `npm run export` を手動実行して再ログイン
+- 冊数が前回比5%超減なら中止（`-Force` で無視）。CSVに変更がなければアップロードをスキップ
+- `-SkipExport` で取得済みCSVから実行。ログと状態は `.sync\`（Git管理外）
+
+毎日06:00の自動実行を登録（初回のみ。時刻変更は `-At "21:00"`）:
+
+```cmd
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\register-sync-task.ps1
+```
+
+削除は `Unregister-ScheduledTask -TaskName KindleBookshelfSync`。
+
 ### 随時更新
 
 **CSV だけ更新する場合**（本の追加・同期後）
