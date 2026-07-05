@@ -22,6 +22,8 @@ $csvPath = Join-Path $purchaseIndexRoot "csv\kindle-web-library.csv"
 $syncDirectory = Join-Path $repositoryRoot ".sync"
 $logDirectory = Join-Path $syncDirectory "logs"
 $statePath = Join-Path $syncDirectory "state.json"
+$historyPath = Join-Path $syncDirectory "history.json"
+$statusLocalCopy = Join-Path $repositoryRoot "data\sync-status.json"
 New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
 $logPath = Join-Path $logDirectory ("sync-" + (Get-Date -Format "yyyy-MM-dd") + ".log")
 
@@ -87,6 +89,52 @@ function Read-SyncState {
     return $null
 }
 
+# 実行結果を .sync\history.json に追記（直近30件）し、画面の「同期ログ」用に
+# data\sync-status.json とR2の sync-status.json へ反映する。失敗しても同期自体は止めない。
+function Save-RunHistory {
+    param([string]$Status, [int]$Rows, [string]$Message)
+    try {
+        $runs = @()
+        if (Test-Path -LiteralPath $historyPath -PathType Leaf) {
+            try {
+                $parsed = Get-Content -LiteralPath $historyPath -Raw -Encoding UTF8 | ConvertFrom-Json
+                if ($null -ne $parsed -and $parsed.PSObject.Properties.Name -contains "runs") {
+                    $runs = @($parsed.runs)
+                }
+            } catch {
+                Write-Log "history.json の読み込みに失敗。新規作成します: $_"
+            }
+        }
+
+        $entry = [ordered]@{
+            at = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+            status = $Status
+            rows = $Rows
+            message = $Message
+        }
+        $runs = @($runs + @($entry) | Select-Object -Last 30)
+        $payload = [ordered]@{ updated_at = $entry.at; runs = $runs }
+        $json = ConvertTo-Json -InputObject $payload -Depth 5
+        Set-Content -LiteralPath $historyPath -Value $json -Encoding UTF8
+
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $statusLocalCopy) | Out-Null
+        Copy-Item -LiteralPath $historyPath -Destination $statusLocalCopy -Force
+
+        $npx = Get-Command "npx.cmd" -ErrorAction SilentlyContinue
+        if ($null -ne $npx) {
+            $uploadExit = Invoke-LoggedProcess -FilePath $npx.Source -ArgumentList @(
+                "wrangler", "r2", "object", "put", "kindle-bookshelf-data/sync-status.json",
+                "--remote", "--file=$historyPath", "--content-type=application/json"
+            ) -WorkingDirectory $repositoryRoot
+            if ($uploadExit -ne 0) {
+                Write-Log "同期ログのR2アップロードに失敗（無視して続行）: exit=$uploadExit"
+            }
+        }
+    } catch {
+        Write-Log "同期ログの保存に失敗（無視して続行）: $_"
+    }
+}
+
 try {
     Write-Log "===== 同期開始 ====="
 
@@ -107,6 +155,7 @@ try {
         if ($exportExitCode -eq 2) {
             Write-Log "Amazonセッション切れ。手動での再ログインが必要です。"
             Show-Toast "Kindle同期: 再ログインが必要" "Amazonセッションが切れています。kindle-purchase-index で npm run export を1回手動実行してください。"
+            Save-RunHistory -Status "login_required" -Rows 0 -Message "Amazonセッション切れ。要手動ログイン"
             exit 2
         }
         if ($exportExitCode -ne 0) {
@@ -136,6 +185,7 @@ try {
             $message = "冊数が前回 $($state.lastRowCount) → 今回 $($rows.Count) に急減。取得失敗の可能性があるため中止（意図的なら -Force で再実行）。"
             Write-Log $message
             Show-Toast "Kindle同期: 中止" $message
+            Save-RunHistory -Status "aborted" -Rows $rows.Count -Message $message
             exit 1
         }
     }
@@ -177,10 +227,12 @@ try {
     }
     $newState | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding UTF8
 
+    Save-RunHistory -Status "success" -Rows $rows.Count -Message ""
     Write-Log "===== 同期完了: $($rows.Count) 冊 ====="
     exit 0
 } catch {
     Write-Log "同期失敗: $_"
     Show-Toast "Kindle同期: 失敗" "$_ / ログ: $logPath"
+    Save-RunHistory -Status "failed" -Rows 0 -Message "$_"
     exit 1
 }

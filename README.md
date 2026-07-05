@@ -167,6 +167,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-all.ps1
 - Amazonセッション切れは終了コード2で中断しトースト通知。`kindle-purchase-index` で `npm run export` を手動実行して再ログイン
 - 冊数が前回比5%超減なら中止（`-Force` で無視）。CSVに変更がなければアップロードをスキップ
 - `-SkipExport` で取得済みCSVから実行。ログと状態は `.sync\`（Git管理外）
+- 実行履歴（成功/失敗、直近10件）は画面トップの「同期ログ」アコーディオンに表示（R2の `sync-status.json` を `/api/sync-status` 経由で取得）
 
 毎日06:00の自動実行を登録（初回のみ。時刻変更は `-At "21:00"`）:
 

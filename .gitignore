@@ -1,4 +1,5 @@
 /data/kindle-web-library.csv
+/data/sync-status.json
 /.sync/
 /dist/
 /.wrangler/

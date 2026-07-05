@@ -43,6 +43,9 @@ const elements = {
   recentUpdates: document.querySelector("#recent-updates"),
   recentList: document.querySelector("#recent-list"),
   recentLatest: document.querySelector("#recent-latest"),
+  syncLog: document.querySelector("#sync-log"),
+  syncLogList: document.querySelector("#sync-log-list"),
+  syncLogLatest: document.querySelector("#sync-log-latest"),
   commentViewDialog: document.querySelector("#comment-view-dialog"),
   commentViewTitle: document.querySelector("#comment-view-title"),
   commentViewList: document.querySelector("#comment-view-list"),
@@ -940,6 +943,70 @@ function renderRecentUpdates() {
   );
 }
 
+const SYNC_LOG_DISPLAY_COUNT = 10;
+const syncStatusLabels = {
+  success: "成功",
+  failed: "失敗",
+  aborted: "中止",
+  login_required: "要ログイン",
+};
+
+async function loadSyncStatus() {
+  const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+  const url = localHosts.has(window.location.hostname)
+    ? "data/sync-status.json"
+    : "/api/sync-status";
+
+  try {
+    const response = await fetch(url, { cache: "no-cache" });
+    if (!response.ok) {
+      return;
+    }
+    const data = await response.json();
+    const runs = Array.isArray(data?.runs)
+      ? data.runs
+      : data?.runs
+        ? [data.runs]
+        : [];
+    renderSyncLog(runs);
+  } catch {
+    // 同期ログが無い環境では非表示のまま
+  }
+}
+
+function renderSyncLog(runs) {
+  const recent = runs.slice(-SYNC_LOG_DISPLAY_COUNT).reverse();
+  if (recent.length === 0) {
+    return;
+  }
+
+  const latest = recent[0];
+  elements.syncLog.hidden = false;
+  elements.syncLogLatest.textContent =
+    `${syncStatusLabels[latest.status] || latest.status} · ${latest.at}`;
+  elements.syncLogList.replaceChildren(
+    ...recent.map((run) => {
+      const item = document.createElement("li");
+      const badge = document.createElement("span");
+      const time = document.createElement("time");
+      const detail = document.createElement("span");
+
+      item.className = "sync-log-item";
+      badge.className = `sync-log-badge ${run.status === "success" ? "is-success" : "is-failure"}`;
+      badge.textContent = syncStatusLabels[run.status] || run.status;
+      time.className = "sync-log-time";
+      time.textContent = run.at;
+      detail.className = "sync-log-detail";
+      detail.textContent = run.status === "success"
+        ? `${Number(run.rows || 0).toLocaleString("ja-JP")}冊`
+        : run.message || "";
+
+      item.append(badge, time, detail);
+      return item;
+    }),
+  );
+}
+
 function render() {
   state.shelfCapacity = getShelfCapacity();
   state.visibleBooks = getVisibleBooks();
@@ -1099,3 +1166,4 @@ window.addEventListener("resize", () => {
 });
 
 loadDefaultCSV();
+loadSyncStatus();

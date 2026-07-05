@@ -466,6 +466,62 @@ a.recent-link:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+.sync-log {
+  margin-top: var(--space-1);
+}
+
+.sync-log-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0 var(--space-2) var(--space-2);
+  list-style: none;
+}
+
+.sync-log-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-size: 0.85rem;
+}
+
+.sync-log-badge {
+  flex-shrink: 0;
+  min-width: 58px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.sync-log-badge.is-success {
+  color: var(--green);
+  background: rgb(36 59 48 / 10%);
+}
+
+.sync-log-badge.is-failure {
+  color: #fffdf8;
+  background: var(--coral);
+}
+
+.sync-log-time {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-log-detail {
+  overflow: hidden;
+  min-width: 0;
+  flex: 1;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .shelf-section {
   max-width: 1240px;
   margin: 0 auto;
