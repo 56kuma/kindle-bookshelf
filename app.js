@@ -1002,6 +1002,12 @@ function renderSyncLog(runs) {
         : run.message || "";
 
       item.append(badge, time, detail);
+      if (run.status !== "success" && run.hint) {
+        const hint = document.createElement("p");
+        hint.className = "sync-log-hint";
+        hint.textContent = `考えられる原因・対処: ${run.hint}`;
+        item.append(hint);
+      }
       return item;
     }),
   );

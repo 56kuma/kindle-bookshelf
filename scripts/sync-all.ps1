@@ -89,10 +89,32 @@ function Read-SyncState {
     return $null
 }
 
+# 失敗した工程から、考えられる原因と対処のヒントを返す
+function Get-FailureHint {
+    param([string]$Step)
+    switch ($Step) {
+        "エクスポート" {
+            return "ネットワーク不通、Amazon側の仕様変更、Chrome/Playwrightの不具合などが考えられます。.sync\logs の当日ログを確認してください。"
+        }
+        "CSV検証" {
+            return "エクスポートが正しいCSVを出力できていない可能性があります。kindle-purchase-index\csv\kindle-web-library.csv を確認してください。"
+        }
+        "R2アップロード" {
+            return "Cloudflare認証の期限切れかネットワークの問題が考えられます。npx wrangler login で再認証を試してください。"
+        }
+        "ローカルコピー" {
+            return "data\ フォルダへの書き込みに失敗しました。ファイルの使用中やアクセス権を確認してください。"
+        }
+        default {
+            return ".sync\logs の当日ログを確認してください。"
+        }
+    }
+}
+
 # 実行結果を .sync\history.json に追記（直近30件）し、画面の「同期ログ」用に
 # data\sync-status.json とR2の sync-status.json へ反映する。失敗しても同期自体は止めない。
 function Save-RunHistory {
-    param([string]$Status, [int]$Rows, [string]$Message)
+    param([string]$Status, [int]$Rows, [string]$Message, [string]$Hint = "")
     try {
         $runs = @()
         if (Test-Path -LiteralPath $historyPath -PathType Leaf) {
@@ -111,6 +133,7 @@ function Save-RunHistory {
             status = $Status
             rows = $Rows
             message = $Message
+            hint = $Hint
         }
         $runs = @($runs + @($entry) | Select-Object -Last 30)
         $payload = [ordered]@{ updated_at = $entry.at; runs = $runs }
@@ -135,10 +158,13 @@ function Save-RunHistory {
     }
 }
 
+$currentStep = "初期化"
+
 try {
     Write-Log "===== 同期開始 ====="
 
     # --- 1. エクスポート（無人モード） ---
+    $currentStep = "エクスポート"
     if ($SkipExport) {
         Write-Log "エクスポートをスキップ（-SkipExport）"
     } else {
@@ -155,7 +181,8 @@ try {
         if ($exportExitCode -eq 2) {
             Write-Log "Amazonセッション切れ。手動での再ログインが必要です。"
             Show-Toast "Kindle同期: 再ログインが必要" "Amazonセッションが切れています。kindle-purchase-index で npm run export を1回手動実行してください。"
-            Save-RunHistory -Status "login_required" -Rows 0 -Message "Amazonセッション切れ。要手動ログイン"
+            Save-RunHistory -Status "login_required" -Rows 0 -Message "Amazonセッション切れ" `
+                -Hint "kindle-purchase-index で npm run export を1回手動実行し、ブラウザで再ログインすれば復旧します。"
             exit 2
         }
         if ($exportExitCode -ne 0) {
@@ -164,6 +191,7 @@ try {
     }
 
     # --- 2. CSV検証 ---
+    $currentStep = "CSV検証"
     if (-not (Test-Path -LiteralPath $csvPath -PathType Leaf)) {
         throw "CSVが見つかりません: $csvPath"
     }
@@ -185,12 +213,15 @@ try {
             $message = "冊数が前回 $($state.lastRowCount) → 今回 $($rows.Count) に急減。取得失敗の可能性があるため中止（意図的なら -Force で再実行）。"
             Write-Log $message
             Show-Toast "Kindle同期: 中止" $message
-            Save-RunHistory -Status "aborted" -Rows $rows.Count -Message $message
+            Save-RunHistory -Status "aborted" -Rows $rows.Count `
+                -Message "冊数が前回 $($state.lastRowCount) → 今回 $($rows.Count) に急減したため中止" `
+                -Hint "取得の失敗が疑われます。返品などで意図的な減少なら sync-all.ps1 -Force で再実行してください。"
             exit 1
         }
     }
 
     # --- 3. 差分チェックとR2アップロード ---
+    $currentStep = "R2アップロード"
     $csvHash = (Get-FileHash -LiteralPath $csvPath -Algorithm SHA256).Hash
     $lastHash = if ($null -ne $state) { $state.lastUploadedHash } else { $null }
 
@@ -210,6 +241,7 @@ try {
     }
 
     # --- 4. ローカル閲覧用コピー ---
+    $currentStep = "ローカルコピー"
     $copyScript = Join-Path $scriptDirectory "sync-kindle-csv.ps1"
     $copyExitCode = Invoke-LoggedProcess -FilePath "powershell.exe" -ArgumentList @(
         "-NoProfile", "-ExecutionPolicy", "Bypass",
@@ -220,6 +252,7 @@ try {
     }
 
     # --- 5. 状態を保存 ---
+    $currentStep = "状態保存"
     $newState = @{
         lastRowCount = $rows.Count
         lastUploadedHash = $csvHash
@@ -231,8 +264,10 @@ try {
     Write-Log "===== 同期完了: $($rows.Count) 冊 ====="
     exit 0
 } catch {
-    Write-Log "同期失敗: $_"
-    Show-Toast "Kindle同期: 失敗" "$_ / ログ: $logPath"
-    Save-RunHistory -Status "failed" -Rows 0 -Message "$_"
+    $hint = Get-FailureHint -Step $currentStep
+    Write-Log "同期失敗（工程: $currentStep）: $_"
+    Write-Log "考えられる原因: $hint"
+    Show-Toast "Kindle同期: 失敗（$currentStep）" "$_ / $hint"
+    Save-RunHistory -Status "failed" -Rows 0 -Message "[$currentStep] $_" -Hint $hint
     exit 1
 }
