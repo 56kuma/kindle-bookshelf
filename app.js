@@ -33,7 +33,6 @@ const elements = {
   sort: document.querySelector("#sort-select"),
   genreFilters: document.querySelector("#genre-filters"),
   commentFilter: document.querySelector("#comment-filter"),
-  csvInput: document.querySelector("#csv-input"),
   count: document.querySelector("#result-count"),
   source: document.querySelector("#source-label"),
   summary: document.querySelector("#library-summary"),
@@ -1325,21 +1324,6 @@ elements.clearSearch.addEventListener("click", () => {
   resetFilters();
   elements.search.focus();
   render();
-});
-
-elements.csvInput.addEventListener("change", async (event) => {
-  const [file] = event.target.files;
-  if (!file) {
-    return;
-  }
-
-  try {
-    await loadCSV(await file.text(), file.name);
-  } catch (error) {
-    window.alert(error.message);
-  } finally {
-    event.target.value = "";
-  }
 });
 
 elements.commentForm.addEventListener("submit", (event) => {
