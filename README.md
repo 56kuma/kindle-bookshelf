@@ -153,9 +153,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\upload-cloudflare-
 
 ### CI/CD
 
-**未設定です。** push しても自動デプロイはされません。画面の反映は下記「随時更新」のとおり `wrangler pages deploy` を手動実行してください。
+**Cloudflare Pages の Git 連携で設定済みです。** `main` ブランチへ push すると、Cloudflare 側で自動的にビルド・デプロイされます（手動での `wrangler pages deploy` は不要）。
 
-GitHub Actions で自動化する場合は `.github/workflows/deploy.yml` を作成し、リポジトリの **Settings → Secrets and variables → Actions** へ `CLOUDFLARE_API_TOKEN`（Pages デプロイ権限）と `CLOUDFLARE_ACCOUNT_ID` を登録する必要があります。
+- 画面（HTML / CSS / JS）の変更は `main` への push だけで本番に反映されます
+- デプロイの状況・履歴は [Cloudflare Dashboard](https://dash.cloudflare.com/) → Workers & Pages → kindle-bookshelf で確認できます
+- CSVデータは Git 管理外のため自動デプロイの対象外です。従来どおり `upload-cloudflare-data.ps1` でR2へアップロードしてください
 
 ### 自動同期
 
@@ -189,6 +191,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\upload-cloudflare-
 ```
 
 **画面も更新する場合**（HTML / CSS / JS を変更した時）
+
+`main` ブランチへ push すれば CI/CD で自動デプロイされます（上記「CI/CD」参照）。
+
+CI/CD を使わず手動でデプロイする場合：
 
 ```cmd
 cd /d D:\kindle\kindle-bookshelf
