@@ -17,7 +17,7 @@ const state = {
   renderedCount: 0,
   query: "",
   sort: "newest",
-  mangaOnly: false,
+  genre: "",
   commentsOnly: false,
   shelfCapacity: 0,
   comments: {},
@@ -31,7 +31,7 @@ const elements = {
   template: document.querySelector("#book-card-template"),
   search: document.querySelector("#search-input"),
   sort: document.querySelector("#sort-select"),
-  mangaFilter: document.querySelector("#manga-filter"),
+  genreFilters: document.querySelector("#genre-filters"),
   commentFilter: document.querySelector("#comment-filter"),
   csvInput: document.querySelector("#csv-input"),
   count: document.querySelector("#result-count"),
@@ -71,11 +71,186 @@ const headerAliases = {
   title_kana: ["title_kana", "title_yomi", "reading"],
   author: ["author", "authors", "creator"],
   category: ["category", "type", "book_type"],
+  genre: ["genre", "ジャンル"],
   asin: ["asin"],
   is_manga: ["is_manga", "manga", "is_comic"],
 };
 
 const mangaCategories = ["漫画", "マンガ", "コミック", "manga", "comic", "comics"];
+
+const OTHER_GENRE = "その他";
+// CSVにジャンル列が無いため、タイトルのキーワードから推定する。
+// ジャンル名は Amazon Kindleストアのカテゴリーに準拠。
+// 先に並んだルールほど優先（レーベル名など特定しやすいものが先、
+// 「仕事」「習慣」のような広いキーワードを持つビジネス・経済が最後）。
+// keywords は normalize() 済みの部分一致、words は英数字の単語一致。
+const genreRules = [
+  {
+    genre: "ライトノベル",
+    keywords: [
+      "ライトノベル", "ラノベ", "電撃文庫", "スニーカー文庫", "ファンタジア文庫",
+      "mf文庫", "ga文庫", "hj文庫", "ガガガ文庫", "ファミ通文庫",
+      "オーバーラップ文庫", "オーバーラップノベルス", "ダッシュエックス文庫",
+      "講談社ラノベ文庫", "電撃の新文芸", "カドカワbooks", "mfブックス",
+      "gcノベルズ", "ヒーロー文庫", "レジェンドノベルス", "サーガフォレスト",
+      "アース・スター", "toブックス",
+    ],
+    words: [],
+  },
+  {
+    genre: "コンピュータ・IT",
+    keywords: [
+      "プログラミング", "プログラマ", "エンジニア", "ソフトウェア", "アルゴリズム",
+      "ネットワーク", "セキュリティ", "データベース", "データ分析", "データサイエンス",
+      "機械学習", "深層学習", "ディープラーニング", "人工知能", "生成ai",
+      "クラウド", "サーバ", "コンピュータ", "パソコン", "情報処理", "情報技術",
+      "基本情報", "応用情報", "システム開発", "システム設計", "要件定義",
+      "オブジェクト指向", "ドメイン駆動", "テスト駆動", "リファクタリング",
+      "コーディング", "アプリ開発", "ゲーム開発", "web制作", "webデザイン",
+      "webアプリ", "ホームページ", "ハッカー", "ハッキング", "go言語",
+    ],
+    words: [
+      "python", "javascript", "typescript", "java", "ruby", "php", "rust",
+      "kotlin", "swift", "golang", "sql", "mysql", "postgresql", "aws", "azure",
+      "gcp", "linux", "unix", "docker", "kubernetes", "git", "github", "react",
+      "vue", "angular", "html", "css", "api", "ai", "chatgpt", "llm", "vba",
+      "c++", "c#", "dx", "iot", "it",
+    ],
+  },
+  {
+    genre: "語学・資格",
+    keywords: [
+      "英語", "英会話", "英単語", "英文法", "英検", "漢検", "中国語", "韓国語",
+      "フランス語", "ドイツ語", "スペイン語", "語学", "資格", "検定",
+      "試験対策", "過去問", "問題集", "勉強法", "宅建", "行政書士",
+      "社労士", "中小企業診断士", "ファイナンシャルプランナー",
+    ],
+    words: ["toeic", "toefl", "ielts", "fp"],
+  },
+  {
+    genre: "暮らし・健康・子育て",
+    keywords: [
+      "健康", "ダイエット", "筋トレ", "筋肉", "トレーニング", "ストレッチ",
+      "睡眠", "栄養", "食事術", "腸活", "腸内", "免疫", "血糖", "血圧", "内臓",
+      "姿勢", "骨盤", "肩こり", "腰痛", "疲労", "疲れ", "自律神経", "メンタル",
+      "うつ", "ストレス", "運動", "ヨガ", "ピラティス", "ランニング", "体幹",
+      "糖質", "断食", "ファスティング", "医者", "医師", "病気", "予防医学",
+      "長生き", "老化", "若返り", "体調", "痩せ", "やせる", "太らない",
+      "認知症", "アンチエイジング", "サプリ", "漢方", "整体", "マッサージ",
+      "子育て", "育児", "離乳食", "料理", "レシピ", "献立", "お弁当",
+      "掃除", "収納", "片づけ", "片付け", "ミニマリスト", "節約", "家事",
+      "暮らし",
+    ],
+    words: [],
+  },
+  {
+    genre: "歴史・地理",
+    keywords: [
+      "歴史", "日本史", "世界史", "戦国", "幕末", "明治維新", "江戸",
+      "縄文", "三国志", "古代", "中世", "近代史", "現代史", "地政学",
+      "地理", "考古学", "ローマ帝国", "武将", "天皇", "昭和史",
+    ],
+    words: [],
+  },
+  {
+    genre: "科学・テクノロジー",
+    keywords: [
+      "宇宙", "物理", "数学", "化学", "生物学", "進化", "遺伝子", "脳科学",
+      "量子", "相対性理論", "天文", "気象", "元素", "科学", "サイエンス",
+      "統計学", "微分", "確率",
+    ],
+    words: [],
+  },
+  {
+    genre: "人文・思想",
+    keywords: [
+      "哲学", "心理学", "心理", "宗教", "仏教", "禅", "神道", "キリスト教",
+      "思想", "倫理", "社会学", "民俗学", "言語学", "名著", "ニーチェ",
+      "アドラー", "ブッダ",
+    ],
+    words: [],
+  },
+  {
+    genre: "小説・文芸",
+    keywords: [
+      "小説", "物語", "短編集", "ミステリ", "サスペンス", "ホラー",
+      "ファンタジー", "純文学", "芥川賞", "直木賞", "本屋大賞", "エッセイ",
+      "随筆", "詩集", "俳句", "短歌", "角川文庫", "新潮文庫", "講談社文庫",
+      "文春文庫", "集英社文庫", "幻冬舎文庫", "中公文庫", "岩波文庫",
+      "ハヤカワ文庫", "創元推理文庫", "創元sf文庫",
+    ],
+    words: ["sf"],
+  },
+  {
+    genre: "趣味・実用",
+    keywords: [
+      "カメラ", "写真", "釣り", "キャンプ", "アウトドア", "登山", "将棋",
+      "囲碁", "麻雀", "ゴルフ", "サッカー", "野球", "自転車", "ロードバイク",
+      "手芸", "編み物", "イラスト", "描き方", "デッサン", "ガーデニング",
+      "園芸", "バイク", "旅行", "温泉", "鉄道", "ピアノ", "ギター",
+      "音楽理論", "ボードゲーム",
+    ],
+    words: ["diy"],
+  },
+  {
+    genre: "ビジネス・経済",
+    keywords: [
+      "ビジネス", "仕事", "経営", "マネジメント", "マーケティング", "リーダー",
+      "起業", "副業", "転職", "キャリア", "営業", "会計", "簿記", "経済",
+      "金融", "投資", "株式", "資産", "節税", "税金", "お金", "年収", "貯金",
+      "家計", "ふるさと納税", "確定申告", "戦略", "企画", "プレゼン", "交渉",
+      "会議", "部下", "上司", "働き方", "仕事術", "時間術", "習慣",
+      "思考法", "ロジカルシンキング", "フレームワーク", "エクセル",
+      "パワーポイント", "マネー",
+    ],
+    words: ["mba", "nisa", "ideco", "excel", "powerpoint"],
+  },
+];
+
+for (const rule of genreRules) {
+  if (rule.words.length > 0) {
+    const escaped = rule.words.map((word) =>
+      word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    );
+    rule.wordPattern = new RegExp(
+      `(?<![a-z0-9])(?:${escaped.join("|")})(?![a-z0-9])`,
+    );
+  }
+}
+
+// チップとジャンル順ソートの表示順（推定の優先順とは別に定義する）
+const GENRE_ORDER = [
+  "漫画",
+  "小説・文芸",
+  "ライトノベル",
+  "ビジネス・経済",
+  "コンピュータ・IT",
+  "暮らし・健康・子育て",
+  "趣味・実用",
+  "歴史・地理",
+  "人文・思想",
+  "科学・テクノロジー",
+  "語学・資格",
+  OTHER_GENRE,
+];
+
+function genreRank(genre) {
+  const index = GENRE_ORDER.indexOf(genre);
+  return index === -1 ? GENRE_ORDER.length - 1 : index;
+}
+
+function inferGenre(title) {
+  const normalizedTitle = normalize(title);
+  for (const rule of genreRules) {
+    if (rule.keywords.some((keyword) => normalizedTitle.includes(keyword))) {
+      return rule.genre;
+    }
+    if (rule.wordPattern && rule.wordPattern.test(normalizedTitle)) {
+      return rule.genre;
+    }
+  }
+  return OTHER_GENRE;
+}
 
 function parseCSV(text) {
   const rows = [];
@@ -134,17 +309,25 @@ function parseCSV(text) {
 
   return rows.slice(1).map((values, index) => {
     const category = valueAt(values, indexes.category);
+    const explicitGenre = valueAt(values, indexes.genre);
     const mangaValue = valueAt(values, indexes.is_manga);
     const manga = indexes.is_manga >= 0
       ? isTruthy(mangaValue)
-      : isMangaCategory(category);
+      : isMangaCategory(category) || isMangaCategory(explicitGenre);
+    const title = valueAt(values, indexes.title) || "タイトル不明";
+    const genre = manga
+      ? "漫画"
+      : explicitGenre
+        || (category && !isMangaCategory(category) ? category : "")
+        || inferGenre(title);
     const book = {
       purchased_at: valueAt(values, indexes.purchased_at),
       cover_image: valueAt(values, indexes.cover_image),
-      title: valueAt(values, indexes.title) || "タイトル不明",
-      title_sort: valueAt(values, indexes.title_kana) || valueAt(values, indexes.title),
+      title,
+      title_sort: valueAt(values, indexes.title_kana) || title,
       author: valueAt(values, indexes.author) || "著者不明",
-      category: manga ? "漫画" : category || "書籍",
+      category: genre,
+      genre,
       asin: valueAt(values, indexes.asin),
       is_manga: manga,
     };
@@ -369,10 +552,10 @@ function getVisibleBooks() {
   const terms = normalize(state.query).split(" ").filter(Boolean);
   const filtered = state.books.filter((book) => {
     const matchesQuery = terms.every((term) => book.searchIndex.includes(term));
-    const matchesManga = !state.mangaOnly || book.is_manga;
+    const matchesGenre = !state.genre || book.genre === state.genre;
     const matchesComments =
       !state.commentsOnly || getComments(book.comment_key).length > 0;
-    return matchesQuery && matchesManga && matchesComments;
+    return matchesQuery && matchesGenre && matchesComments;
   });
 
   return filtered.sort((left, right) => {
@@ -386,8 +569,9 @@ function getVisibleBooks() {
       return japaneseCollator.compare(left.author, right.author);
     }
     if (state.sort === "genre") {
-      const genreOrder = Number(right.is_manga) - Number(left.is_manga);
+      const genreOrder = genreRank(left.genre) - genreRank(right.genre);
       return genreOrder
+        || japaneseCollator.compare(left.genre, right.genre)
         || japaneseCollator.compare(left.title_sort, right.title_sort);
     }
     return dateValue(right.purchased_at) - dateValue(left.purchased_at);
@@ -1026,17 +1210,60 @@ function render() {
 
 function resetFilters() {
   state.query = "";
-  state.mangaOnly = false;
+  state.genre = "";
   state.commentsOnly = false;
   elements.search.value = "";
-  elements.mangaFilter.setAttribute("aria-pressed", "false");
+  updateGenreChips();
   elements.commentFilter.setAttribute("aria-pressed", "false");
+}
+
+function renderGenreChips() {
+  const present = new Set(state.books.map((book) => book.genre));
+  const extras = [...present]
+    .filter((genre) => !GENRE_ORDER.includes(genre))
+    .sort(japaneseCollator.compare);
+  const genres = [
+    ...GENRE_ORDER.filter((genre) => present.has(genre)),
+    ...extras,
+  ];
+
+  elements.genreFilters.replaceChildren(
+    ...genres.map((genre) => {
+      const chip = document.createElement("button");
+      const check = document.createElement("span");
+
+      chip.className = "filter-chip";
+      chip.type = "button";
+      chip.dataset.genre = genre;
+      chip.setAttribute("aria-pressed", String(state.genre === genre));
+      check.className = "filter-check";
+      check.setAttribute("aria-hidden", "true");
+      check.textContent = "✓";
+      chip.append(check, document.createTextNode(genre));
+      chip.addEventListener("click", () => {
+        state.genre = state.genre === genre ? "" : genre;
+        updateGenreChips();
+        render();
+      });
+      return chip;
+    }),
+  );
+}
+
+function updateGenreChips() {
+  for (const chip of elements.genreFilters.querySelectorAll(".filter-chip")) {
+    chip.setAttribute(
+      "aria-pressed",
+      String(state.genre === chip.dataset.genre),
+    );
+  }
 }
 
 async function loadCSV(text, sourceLabel) {
   state.rawBooks = parseCSV(text);
   state.books = collapseMangaSeries(state.rawBooks);
   resetFilters();
+  renderGenreChips();
   elements.source.textContent = sourceLabel;
   updateSummary();
   renderRecentUpdates();
@@ -1085,12 +1312,6 @@ elements.search.addEventListener("input", (event) => {
 
 elements.sort.addEventListener("change", (event) => {
   state.sort = event.target.value;
-  render();
-});
-
-elements.mangaFilter.addEventListener("click", () => {
-  state.mangaOnly = !state.mangaOnly;
-  elements.mangaFilter.setAttribute("aria-pressed", String(state.mangaOnly));
   render();
 });
 
