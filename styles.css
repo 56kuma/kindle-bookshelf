@@ -247,6 +247,10 @@ main {
   margin-top: var(--space-1);
 }
 
+.genre-filters {
+  display: contents;
+}
+
 .filter-chip {
   display: inline-flex;
   min-height: 44px;

@@ -7,7 +7,8 @@
 
 - 木製本棚風の表示と漫画シリーズ集約（同一シリーズを1エントリにまとめ、最新巻・所持巻数を表示）
 - タイトル・著者・ASIN・購入日・ジャンルでの全文検索
-- 漫画のみ・コメントあり絞り込み、購入日（新/旧）・タイトル・著者・ジャンル順ソート
+- ジャンル絞り込み（漫画・IT・健康・ビジネス・その他）とコメントあり絞り込み、購入日（新/旧）・タイトル・著者・ジャンル順ソート
+  - CSVに `genre` / `category` 列があればその値を使用。無い場合はタイトルのキーワードから自動推定（漫画は `is_manga` で判定）
 - 全冊数・漫画作品数・書籍数のライブラリサマリー
 - 漫画ごとのコメントを Cloudflare D1 DB へ保存（誰でもWebから投稿・編集・削除・スレッド表示）
 - ブラウザから直接CSVを読み込む機能
@@ -50,6 +51,7 @@ purchased_at,title,author,asin,cover_url,is_manga
 | `title_kana` | `title_yomi`, `reading` | タイトルよみがな（ソート用、省略可） |
 | `author` | `authors`, `creator` | 著者 |
 | `category` | `type`, `book_type` | ジャンル（`漫画`を含む値は `is_manga` と同等） |
+| `genre` | `ジャンル` | ジャンル（省略可。`category` より優先。無ければタイトルからIT・健康・ビジネス等を自動推定） |
 | `asin` | — | ASIN |
 | `cover_url` | `cover_image`, `image_url`, `cover` | 表紙画像URL |
 | `is_manga` | `manga`, `is_comic` | 漫画フラグ（true/1/yes/y） |

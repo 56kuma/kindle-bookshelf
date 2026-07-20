@@ -44,16 +44,8 @@
             >
           </label>
 
-          <div class="filter-row" aria-label="本の種類で絞り込む">
-            <button
-              id="manga-filter"
-              class="filter-chip"
-              type="button"
-              aria-pressed="false"
-            >
-              <span class="filter-check" aria-hidden="true">✓</span>
-              漫画のみ
-            </button>
+          <div class="filter-row" aria-label="ジャンルで絞り込む">
+            <div id="genre-filters" class="genre-filters"></div>
             <button
               id="comment-filter"
               class="filter-chip"
@@ -73,7 +65,7 @@
                 <option value="oldest">購入日が古い順</option>
                 <option value="title">タイトル あいうえお順</option>
                 <option value="author">著者 あいうえお順</option>
-                <option value="genre">ジャンル順（漫画・書籍）</option>
+                <option value="genre">ジャンル順</option>
               </select>
             </label>
 
